@@ -1,5 +1,6 @@
 package com.nettakrim.souper_secret_settings;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.nettakrim.souper_secret_settings.network.packets.ApplyShaderPacket;
 import com.nettakrim.souper_secret_settings.shaders.LayerData;
 import com.nettakrim.souper_secret_settings.shaders.PostLayerEffect;
@@ -101,13 +102,15 @@ public class SouperSecretSettingsClient implements ClientModInitializer {
                 assert player != null;
                 if (payload.shaderId().equalsIgnoreCase("clear")) {
                     SouperSecretSettingsClient.clearShaders();
+                } else if (payload.shaderId().equalsIgnoreCase("random")) {
+                    var random = SouperSecretSettingsClient.setShader("random") ? 1 : -1;
                 } else {
-                    SouperSecretSettingsClient.updateToggle();
-                    SouperSecretSettingsClient.stackShader(payload.shaderId(), 0);
+                    var i = SouperSecretSettingsClient.stackShader(payload.shaderId(), 1) ? 1 : -1;
                 }
             });
         });
     }
+
 
     public static GameRendererAccessor getGameRendererAccessor() {
         if (gameRendererAccessor == null) {
