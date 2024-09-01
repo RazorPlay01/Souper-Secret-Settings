@@ -9,6 +9,26 @@ import net.minecraft.util.Identifier;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * <p>This package provides functionality to obtain client-loaded shaders from the server.</p>
+ * <p>The package leverages a server-side plugin (e.g. DedCraftDrugsPlugin) to communicate shader information
+ * to clients.</p>
+ *
+ * <h2>Example Usage:</h2>
+ *
+ * <pre>
+ * {@code
+ *  private void setShaderToClient(Player player) {
+ *      byte[] buf = "getClientLoadedShader".getBytes(StandardCharsets.UTF_8);
+ *      player.sendPluginMessage(HypeTrainTrapPlugin.PLUGIN, "souper_secret_settings:shaders_loaded_packet_id", buf);
+ *  }
+ * }
+ * </pre>
+ *
+ * <p>The above code demonstrates how to get the shaders loaded on the client via a plugin message.</p>
+ *
+ * @author RazorPlay01
+ */
 public record ShadersLoadedPacket(String shaders) implements CustomPayload {
     public static final Identifier SHADERS_LOADED_PACKET_ID =
             Identifier.of(SouperSecretSettingsClient.MODID, "shaders_loaded_packet_id");
