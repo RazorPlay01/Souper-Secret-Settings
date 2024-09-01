@@ -1,7 +1,7 @@
 package com.nettakrim.souper_secret_settings;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.nettakrim.souper_secret_settings.network.packets.ApplyShaderPacket;
-import com.nettakrim.souper_secret_settings.network.packets.ShadersLoadedPacket;
 import com.nettakrim.souper_secret_settings.shaders.LayerData;
 import com.nettakrim.souper_secret_settings.shaders.PostLayerEffect;
 import com.nettakrim.souper_secret_settings.shaders.ShaderData;
@@ -14,6 +14,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.Framebuffer;
 import net.minecraft.client.gl.PostEffectProcessor;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.text.*;
@@ -22,7 +23,6 @@ import net.minecraft.util.Identifier;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,9 +79,9 @@ public class SouperSecretSettingsClient implements ClientModInitializer {
     /**
      * Registers the necessary packets for shader communication between client and server.
      *
-     * <p>This method registers the {@link ApplyShaderPacket} and {@link ShadersLoadedPacket} for both
-     * client-to-server (C2S) and server-to-client (S2C) communication. It also registers global receivers on the client
-     * side to handle incoming {@link ApplyShaderPacket} and {@link ShadersLoadedPacket} instances.</p>
+     * <p>This method registers the {@link ApplyShaderPacket} for both client-to-server (C2S) and server-to-client (S2C)
+     * communication. It also registers a global receiver on the client side to handle incoming {@link ApplyShaderPacket}
+     * instances.</p>
      *
      * <p>When a client sends an {@link ApplyShaderPacket}, the registered receiver will:</p>
      * <ul>
@@ -90,40 +90,25 @@ public class SouperSecretSettingsClient implements ClientModInitializer {
      *   <li>Otherwise, update the toggle state and apply the shader specified by the ID.</li>
      * </ul>
      *
-     * <p>When a client receives a {@link ShadersLoadedPacket}, the registered receiver will:</p>
-     * <ul>
-     *   <li>If the payload's shaders are "getClientLoadedShader", it will build a list of shader IDs from
-     *   {@link SouperSecretSettingsClient#postShaders} and send it back to the server.</li>
-     * </ul>
-     *
      * @author RazorPlay01
      */
     private static void registerPackets() {
         PayloadTypeRegistry.playC2S().register(ApplyShaderPacket.PACKET_ID, ApplyShaderPacket.CODEC);
         PayloadTypeRegistry.playS2C().register(ApplyShaderPacket.PACKET_ID, ApplyShaderPacket.CODEC);
 
-        PayloadTypeRegistry.playC2S().register(ShadersLoadedPacket.PACKET_ID, ShadersLoadedPacket.CODEC);
-        PayloadTypeRegistry.playS2C().register(ShadersLoadedPacket.PACKET_ID, ShadersLoadedPacket.CODEC);
-
-        ClientPlayNetworking.registerGlobalReceiver(ApplyShaderPacket.PACKET_ID, (payload, context) -> context.client().execute(() -> {
-            if (payload.shaderId().equalsIgnoreCase("clear")) {
-                SouperSecretSettingsClient.clearShaders();
-            } else {
-                var i = SouperSecretSettingsClient.stackShader(payload.shaderId(), 1) ? 1 : -1;
-            }
-        }));
-        ClientPlayNetworking.registerGlobalReceiver(ShadersLoadedPacket.PACKET_ID, (payload, context) -> context.client().execute(() -> {
-            if (payload.shaders().equalsIgnoreCase("getClientLoadedShader")) {
-                List<String> shaderIds = new ArrayList<>();
-                for (ShaderData shaderData : SouperSecretSettingsClient.postShaders) {
-                    shaderIds.add(shaderData.id);
+        ClientPlayNetworking.registerGlobalReceiver(ApplyShaderPacket.PACKET_ID, (payload, context) -> {
+            ClientPlayerEntity player = context.client().player;
+            context.client().execute(() -> {
+                assert player != null;
+                if (payload.shaderId().equalsIgnoreCase("clear")) {
+                    SouperSecretSettingsClient.clearShaders();
+                } else if (payload.shaderId().equalsIgnoreCase("random")) {
+                    var random = SouperSecretSettingsClient.setShader("random") ? 1 : -1;
+                } else {
+                    var i = SouperSecretSettingsClient.stackShader(payload.shaderId(), 1) ? 1 : -1;
                 }
-                if (SouperSecretSettingsClient.postShaders.size() > 1) {
-                    shaderIds.add("random");
-                }
-                ClientPlayNetworking.send(new ShadersLoadedPacket(shaderIds.toString()));
-            }
-        }));
+            });
+        });
     }
 
 
