@@ -1,3 +1,5 @@
+# This fork adds packets needed for the application and obtaining shaders from the server side.
+
 # Souper Secret Settings
 Re-adds the old super secret settings through the power of soup!
 
